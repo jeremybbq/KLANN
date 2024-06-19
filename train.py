@@ -14,7 +14,6 @@ from models import MODEL2, MODEL1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("using", device)
 
-
 # MODIFIABLE
 # ------------------------------------------------
 # choose to retrain an existing model or train a new model (True or False)
@@ -26,7 +25,7 @@ data = 'facebender-rndamp'
 # select folder name (used in eval.py)
 dir = 'facebender-rndamp_small_MODEL1'
 # GLU MLP hidden layer sizes
-layers = [3,4,5]
+layers = [3, 4, 5]
 # FC layer size in MODEL2
 layer = 5
 # number of biquads
@@ -38,13 +37,14 @@ seq_length = 1024
 # samples used for dividing the audio
 # (seq_length and trunc_length should sum to a multiple of N)
 # (1*N -> no overlap-add method)
-trunc_length = 1*N - seq_length
+trunc_length = 1 * N - seq_length
 batch_size = 50
 learning_rate = 1e-3
 # loss functions
 loss_func = nn.MSELoss()
 mr_stft = False
-loss_func2 = auraloss.freq.MultiResolutionSTFTLoss(fft_sizes = [1024, 512, 256], hop_sizes = [120, 50, 25], win_lengths = [600, 240, 100], mag_distance = "L1")
+loss_func2 = auraloss.freq.MultiResolutionSTFTLoss(fft_sizes=[1024, 512, 256], hop_sizes=[120, 50, 25],
+                                                   win_lengths=[600, 240, 100], mag_distance="L1")
 alpha = 0.001
 # number of epochs
 n_epochs = 3
@@ -53,18 +53,21 @@ n_epochs = 3
 
 # create folder
 if not retrain:
-    os.mkdir('results/' + dir)
+    os.makedirs('results/' + dir, exist_ok=True)
 # create parameters file
 with open('results/' + dir + '/parameters.txt', 'w') as f:
-    f.write('data: ' + data + '\nmodel_train: ' + model_train + '\nlayers: ' + str(layers).replace(" ", "") + '\nlayer: ' + str(layer) + '\nn: ' + str(n) + '\nN: '+ str(N) + '\nseq_length: ' + str(seq_length) +
-    '\ntrunc_length: ' + str(trunc_length) + '\nbatch_size: ' + str(batch_size) + '\nlearning_rate: ' + str(learning_rate) + '\nMR-STFT: ' + str(mr_stft) + '\nalpha: ' + str(alpha) +
-    '\nepochs: ' + str(n_epochs) + '\nlog dir: ' + 'results/' + dir + '/' + 'model_' + data + '\nretrain: ' + str(retrain))
+    f.write('data: ' + data + '\nmodel_train: ' + model_train + '\nlayers: ' +
+            str(layers).replace(" ", "") + '\nlayer: ' + str(layer) + '\nn: ' + str(n) + '\nN: ' +
+            str(N) + '\nseq_length: ' + str(seq_length) + '\ntrunc_length: ' + str(trunc_length) + '\nbatch_size: ' +
+            str(batch_size) + '\nlearning_rate: ' + str(learning_rate) + '\nMR-STFT: ' + str(mr_stft) + '\nalpha: ' +
+            str(alpha) + '\nepochs: ' + str(n_epochs) + '\nlog dir: ' + 'results/' + dir + '/' + 'model_' + data +
+            '\nretrain: ' + str(retrain))
 print('Model: ' + dir)
 
 # initialize TensorBoard
-writer = SummaryWriter(log_dir = 'results/' + dir + '/' + 'model_' + data)
+writer = SummaryWriter(log_dir='results/' + dir + '/' + 'model_' + data)
 
-#preprocess audio
+# preprocess audio
 train_input, fs = torchaudio.load('data/train/' + data + '-input.wav')
 train_target, fs = torchaudio.load('data/train/' + data + '-target.wav')
 val_input, fs = torchaudio.load('data/val/' + data + '-input.wav')
@@ -78,10 +81,12 @@ if model_train == 'MODEL1':
     model = MODEL1(layers, n, N).to(device).train(True)
 if model_train == 'MODEL2':
     model = MODEL2(layers, layer, n, N).to(device).train(True)
-model_optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+model_optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), eps=1e-08, weight_decay=0,
+                                   amsgrad=False)
 if retrain:
     model.load_state_dict(torch.load('results/' + dir + '/model.pth'))
     model_optimizer.load_state_dict(torch.load('results/' + dir + '/model_optimizer.pth'))
+
 
 # trining and validation loops
 def train_loop():
@@ -98,9 +103,10 @@ def train_loop():
         # calculate loss
         # truncate before to stabilize filters
         if mr_stft:
-            loss = loss_func(y_hat[:,trunc_length:,0], y_out[:,trunc_length:,0]) + alpha*loss_func2(y_hat[:,trunc_length:,:].permute(0,2,1), y_out[:,trunc_length:,:].permute(0,2,1))
+            loss = loss_func(y_hat[:, trunc_length:, 0], y_out[:, trunc_length:, 0]) + alpha * loss_func2(
+                y_hat[:, trunc_length:, :].permute(0, 2, 1), y_out[:, trunc_length:, :].permute(0, 2, 1))
         else:
-            loss = loss_func(y_hat[:,trunc_length:,0], y_out[:,trunc_length:,0])
+            loss = loss_func(y_hat[:, trunc_length:, 0], y_out[:, trunc_length:, 0])
 
         # backpropagation
         loss.backward()
@@ -112,6 +118,7 @@ def train_loop():
     # return average loss of one epoch
     return train_loss / len(train_dataset)
 
+
 def val_loop():
     val_loss = 0
     for (X, y) in val_dataset:
@@ -120,13 +127,15 @@ def val_loop():
         y_hat = model(X_in)
 
         if mr_stft:
-            loss = loss_func(y_hat[:,trunc_length:,0], y_out[:,trunc_length:,0]) + alpha*loss_func2(y_hat[:,trunc_length:,:].permute(0,2,1), y_out[:,trunc_length:,:].permute(0,2,1))
+            loss = loss_func(y_hat[:, trunc_length:, 0], y_out[:, trunc_length:, 0]) + alpha * loss_func2(
+                y_hat[:, trunc_length:, :].permute(0, 2, 1), y_out[:, trunc_length:, :].permute(0, 2, 1))
         else:
-            loss = loss_func(y_hat[:,trunc_length:,0], y_out[:,trunc_length:,0])
+            loss = loss_func(y_hat[:, trunc_length:, 0], y_out[:, trunc_length:, 0])
 
         val_loss += loss.item()
 
     return val_loss / len(val_dataset)
+
 
 if retrain:
     with torch.no_grad():
@@ -148,9 +157,9 @@ for epoch in range(n_epochs):
             torch.save(model.state_dict(), 'results/' + dir + '/model.pth')
             torch.save(model_optimizer.state_dict(), 'results/' + dir + '/model_optimizer.pth')
             print('new best val loss')
-        print('Epoch {} -- Train Loss {:3E} Val Loss {:3E}'.format(epoch+1, train_loss, val_loss))
+        print('Epoch {} -- Train Loss {:3E} Val Loss {:3E}'.format(epoch + 1, train_loss, val_loss))
     else:
-        print('Epoch {} -- Train Loss {:3E}'.format(epoch+1, train_loss))
+        print('Epoch {} -- Train Loss {:3E}'.format(epoch + 1, train_loss))
 
     # log loss
     writer.add_scalars('Losses',
