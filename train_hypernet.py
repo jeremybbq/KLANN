@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from models import MODEL1
-from Hypernet import HyperNetwork, assign_params
+from Hypernet2 import HyperNetwork, assign_params
 from hyper_dataset import load_data
 import time
 

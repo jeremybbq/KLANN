@@ -163,8 +163,6 @@ class HyperNetwork(nn.Module):
             dummy_model.mlp1[6].weight.data = w_mlp1_6
             dummy_model.mlp1[6].bias.data = b_mlp1_6
 
-            #TODO: fix it here below
-
             for i in range(len(dummy_model.filters)):
                 dummy_model.filters[i].g.data = g[i]
                 dummy_model.filters[i].R.data = R[i]
@@ -187,7 +185,7 @@ class HyperNetwork(nn.Module):
             dummy_model.mlp2[6].bias.data = b_mlp2_6
 
             #generate prediction from dummy model
-            y_hat = dummy_model((x.view(1, -1, 1))).squeeze(-1)
+            y_hat = dummy_model(x).squeeze(-1)
 
         # Return all generated weights and biases
         return y_hat
@@ -210,8 +208,8 @@ if __name__ == '__main__':
     # Create a random latent vector of size 2
     # latent_vector = torch.randn(1, 2)
     # latent_vector = latent_vector / max(latent_vector)
-    #latent_vector = torch.tensor([[1000, 1000]])
-    latent_vector = torch.tensor([[20000, 500000],[15000, 100000],[10000, 1000],[20000, 20000]])
+    latent_vector = torch.tensor([[1000, 1000]])
+    #latent_vector = torch.tensor([[20000, 500000],[15000, 100000],[10000, 1000],[20000, 20000]])
 
 
     dir = 'ts808_bigtrain_MODEL1'
@@ -234,6 +232,7 @@ if __name__ == '__main__':
     N = int(params[4])
 
     train_input, fs = torchaudio.load(r'D:\fau\magisterka\spice\out\train\\ts808-input.wav')
+    print((train_input.view(1,-1,1)).shape)
     hypernetwork(latent_vector, train_input)
 
 
